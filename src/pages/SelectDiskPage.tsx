@@ -34,14 +34,6 @@ export function SelectDiskPage() {
     navigate("/results", { state: { diskPath: selectedDisk } });
   };
 
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
-  };
-
   return (
     <div className="min-h-screen w-full flex justify-center items-center px-4 py-6">
       <div className="w-full max-w-3xl flex flex-col gap-6">
@@ -50,7 +42,7 @@ export function SelectDiskPage() {
             onClick={() => {
               navigate("/");
             }}
-            className="bg-cyan-300/10 border-cyan-300 border-1 w-19 h-9 rounded-2xl font-semibold hover:bg-cyan-300/50 hover:scale-110"
+            className="bg-cyan-300/10 border-cyan-300 border w-19 h-9 rounded-2xl font-semibold hover:bg-cyan-300/50 hover:scale-110"
           >
             ← Voltar
           </button>
@@ -73,10 +65,6 @@ export function SelectDiskPage() {
             <div className="grid gap-4 w-full items-center">
               {disks.map((disk, index) => {
                 const isSelected = selectedDisk === disk.mount_point;
-                const usedPercentage =
-                  ((disk.total_space - disk.available_space) /
-                    disk.total_space) *
-                  100;
 
                 return (
                   <div
@@ -125,7 +113,7 @@ export function SelectDiskPage() {
                 disabled={!selectedDisk || scanning}
                 className={`text-white text-xl font-semibold w-80 h-10 rounded-2xl transition ${
                   selectedDisk && !scanning
-                    ? "bg-gradient-to-r from-cyan-500 to-blue-500 hover:scale-105"
+                    ? "bg-cyan-500 hover:scale-105"
                     : "bg-slate-800 text-slate-500 cursor-not-allowed"
                 }`}
               >
