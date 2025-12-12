@@ -43,9 +43,9 @@ export function SelectDiskPage() {
   };
 
   return (
-    <div className="w-screen h-screen flex justify-center items-center">
-      <div className="w-280 h-150">
-        <div className="">
+    <div className="min-h-screen w-full flex justify-center items-center px-4 py-6">
+      <div className="w-full max-w-3xl flex flex-col gap-6">
+        <div>
           <button
             onClick={() => {
               navigate("/");
@@ -55,7 +55,7 @@ export function SelectDiskPage() {
             ← Voltar
           </button>
         </div>
-        <div className="flex flex-col justify-center items-center h-full gap-5">
+        <div className="flex flex-col justify-center items-center gap-5">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 space-y-4">
               <div className="relative w-20 h-20">
