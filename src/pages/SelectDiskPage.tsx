@@ -29,7 +29,7 @@ export function SelectDiskPage() {
     if (!selectedDisk) return;
 
     setScanning(true);
-    
+
     // Navega para a página de resultados passando o caminho do disco
     navigate("/results", { state: { diskPath: selectedDisk } });
   };
@@ -43,25 +43,19 @@ export function SelectDiskPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-6 py-10">
-      <div className="w-full max-w-5xl space-y-8 bg-white/5 border border-white/10 rounded-3xl shadow-2xl backdrop-blur-xl p-8">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+    <div className="w-screen h-screen flex justify-center items-center">
+      <div className="w-280 h-150">
+        <div className="">
           <button
-            onClick={() => navigate("/")}
-            className="px-4 py-2 rounded-xl border border-white/10 text-slate-200 hover:border-cyan-400 hover:text-white transition"
+            onClick={() => {
+              navigate("/");
+            }}
+            className="bg-cyan-300/10 border-cyan-300 border-1 w-19 h-9 rounded-2xl font-semibold hover:bg-cyan-300/50 hover:scale-110"
           >
             ← Voltar
           </button>
-          <div className="text-right">
-            <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Passo 1</p>
-            <h1 className="text-3xl font-bold text-white">Selecione o disco</h1>
-            <p className="text-sm text-slate-400">Escolha a unidade para varredura</p>
-          </div>
         </div>
-
-        {/* Disks List */}
-        <div className="space-y-4">
+        <div className="flex flex-col justify-center items-center h-full gap-5">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 space-y-4">
               <div className="relative w-20 h-20">
@@ -76,11 +70,14 @@ export function SelectDiskPage() {
               <p className="text-gray-400 text-xl">Nenhum disco encontrado</p>
             </div>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid gap-4 w-full items-center">
               {disks.map((disk, index) => {
                 const isSelected = selectedDisk === disk.mount_point;
-                const usedPercentage = ((disk.total_space - disk.available_space) / disk.total_space) * 100;
-                
+                const usedPercentage =
+                  ((disk.total_space - disk.available_space) /
+                    disk.total_space) *
+                  100;
+
                 return (
                   <div
                     key={index}
@@ -92,35 +89,26 @@ export function SelectDiskPage() {
                     }`}
                   >
                     <div className="flex items-center gap-5">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${
-                        isSelected ? "bg-cyan-500 text-white" : "bg-slate-800 text-slate-100"
-                      }`}>
+                      <div
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${
+                          isSelected ? "bg-cyan-500 text-white" : "bg-slate-100"
+                        }`}
+                      >
                         {disk.is_removable ? "💾" : "💿"}
                       </div>
 
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-lg font-semibold text-white">{disk.name || "Disco Local"}</p>
+                            <p className="text-lg font-semibold text-white">
+                              {disk.name || "Disco local"}
+                            </p>
                             <div className="flex items-center gap-2 text-sm text-slate-400">
-                              <code className="bg-slate-900/60 px-2 py-1 rounded">{disk.mount_point}</code>
-                              {disk.is_removable && <span className="px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs">Removível</span>}
-                              <span className="px-2 py-1 rounded-full bg-blue-500/15 text-blue-200 text-xs">{disk.file_system}</span>
+                              <code className="bg-slate-900/60 px-2 py-1 rounded">
+                                {disk.mount_point}
+                              </code>
+                              <span className="">{disk.file_system}</span>
                             </div>
-                          </div>
-                          {isSelected && <span className="text-cyan-300 font-semibold text-sm">Selecionado</span>}
-                        </div>
-
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-xs text-slate-400">
-                            <span>{formatBytes(disk.total_space - disk.available_space)} usado</span>
-                            <span>{formatBytes(disk.total_space)} total</span>
-                          </div>
-                          <div className="h-2 rounded-full bg-slate-900 overflow-hidden">
-                            <div
-                              className="h-full bg-linear-to-r from-cyan-500 to-blue-500"
-                              style={{ width: `${usedPercentage}%` }}
-                            ></div>
                           </div>
                         </div>
                       </div>
@@ -130,24 +118,26 @@ export function SelectDiskPage() {
               })}
             </div>
           )}
+          {disks.length > 0 && (
+            <div className="flex">
+              <button
+                onClick={handleStartScan}
+                disabled={!selectedDisk || scanning}
+                className={`text-white text-xl font-semibold w-80 h-10 rounded-2xl transition ${
+                  selectedDisk && !scanning
+                    ? "bg-gradient-to-r from-cyan-500 to-blue-500 hover:scale-105"
+                    : "bg-slate-800 text-slate-500 cursor-not-allowed"
+                }`}
+              >
+                {scanning
+                  ? "Iniciando..."
+                  : selectedDisk
+                  ? "Iniciar varredura"
+                  : "Selecione um disco"}
+              </button>
+            </div>
+          )}
         </div>
-
-        {/* Action Button */}
-        {disks.length > 0 && (
-          <div className="flex justify-end pt-6">
-            <button
-              onClick={handleStartScan}
-              disabled={!selectedDisk || scanning}
-              className={`px-8 py-3 rounded-xl text-white font-semibold transition ${
-                selectedDisk && !scanning
-                  ? "bg-linear-to-r from-cyan-500 to-blue-500 hover:scale-105"
-                  : "bg-slate-800 text-slate-500 cursor-not-allowed"
-              }`}
-            >
-              {scanning ? "Iniciando..." : selectedDisk ? "Iniciar varredura" : "Selecione um disco"}
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

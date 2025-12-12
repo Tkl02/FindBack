@@ -4,25 +4,25 @@ export function HomePage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-slate-950 px-6 py-10">
-      <div className="max-w-4xl w-full rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-xl p-10 space-y-10">
-        <div className="space-y-4 text-center">
-          <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Recuperação Inteligente</p>
-          <h1 className="text-6xl font-black text-white">FindBack</h1>
-          <p className="text-lg text-slate-300 max-w-2xl mx-auto">
-            Varredura rápida, filtros por tipo de arquivo e restauração direta com poucos cliques.
-          </p>
-        </div>
-
-        <div className="flex justify-center">
-          <button
-            onClick={() => navigate("/select-disk")}
-            className="px-10 py-4 rounded-2xl bg-linear-to-r from-cyan-500 to-blue-500 text-white text-lg font-semibold shadow-lg shadow-cyan-500/30 transition-transform hover:scale-105"
-          >
-            Começar recuperação
-          </button>
-        </div>
+    <div className="flex flex-col justify-center items-center w-screen h-screen gap-5">
+      <div className="">
+        <h1 className="text-7xl font-black text-white">Find Back</h1>
       </div>
+      <div className="">
+        <p className="text-lg text-slate-300 max-w-2xl mx-auto">Recupere seus dados de maneira facil e rapido</p>
+      </div>
+      <div>
+        <button onClick={() => navigate("/select-disk")} className="w-60 h-14 rounded-xl
+         bg-cyan-300/20 border border-cyan-300/30
+         text-xl font-medium text-cyan-100
+         transition-all duration-300 ease-out
+         hover:scale-105 hover:bg-cyan-300/30
+         active:scale-95
+         backdrop-blur-sm shadow-lg shadow-cyan-300/10">
+          Iniciar Recuperação
+        </button>
+      </div>
+
     </div>
   );
 }
