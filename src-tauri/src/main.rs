@@ -1,8 +1,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use serde::Serialize;
+use std::collections::HashSet;
 use std::fs::OpenOptions;
 use std::io::Read;
+use std::io::Seek;
+use std::io::SeekFrom;
 use tauri::Emitter;
 
 #[derive(Serialize, Clone, Debug)]
@@ -48,6 +51,7 @@ fn scan_disk(device_path: &str, app_handle: tauri::AppHandle) -> Result<(), Stri
     let mut buffer = vec![0u8; 4096];
     let mut overlap: Vec<u8> = Vec::new();
     let mut file_id: u32 = 0;
+    let mut seen_positions: HashSet<u64> = HashSet::new();
 
     let max_header_len = SIGNATURES.iter().map(|s| s.header.len()).max().unwrap_or(0);
 
@@ -57,35 +61,78 @@ fn scan_disk(device_path: &str, app_handle: tauri::AppHandle) -> Result<(), Stri
             break;
         }
 
+        let chunk_end = device
+            .seek(SeekFrom::Current(0))
+            .map_err(|e| format!("Erro ao obter posição: {}", e))?;
+        let chunk_start = chunk_end.saturating_sub(bytes_read as u64);
+
         let mut scan_buf = overlap.clone();
         scan_buf.extend_from_slice(&buffer[..bytes_read]);
+        let overlap_len = overlap.len() as u64;
 
         for sig in SIGNATURES {
             let header_len = sig.header.len();
-
             if scan_buf.len() < header_len {
                 continue;
             }
 
             for i in 0..=scan_buf.len() - header_len {
-                if &scan_buf[i..i + header_len] == sig.header {
-                    file_id += 1;
-
-                    let (size, status) = reconstruct_file(&mut device, sig);
-
-                    let recovered = RecoveredFile {
-                        id: file_id,
-                        file_type: sig.file_type.to_string(),
-                        size,
-                        status,
-                    };
-
-                    let _ = app_handle.emit("file_found", recovered);
+                if &scan_buf[i..i + header_len] != sig.header {
+                    continue;
                 }
+
+                let abs_pos = chunk_start
+                    .saturating_sub(overlap_len)
+                    .saturating_add(i as u64);
+
+                if !seen_positions.insert(abs_pos) {
+                    continue;
+                }
+
+                let resume_pos = chunk_end;
+
+                device
+                    .seek(SeekFrom::Start(abs_pos))
+                    .map_err(|e| format!("Erro ao posicionar no header: {}", e))?;
+
+                device
+                    .seek(SeekFrom::Current(header_len as i64))
+                    .map_err(|e| format!("Erro ao avançar após header: {}", e))?;
+
+                let after_header_pos = device
+                    .seek(SeekFrom::Current(0))
+                    .map_err(|e| format!("Erro ao obter posição pós-header: {}", e))?;
+
+                if !validate_candidate(&mut device, sig) {
+                    device
+                        .seek(SeekFrom::Start(resume_pos))
+                        .map_err(|e| format!("Erro ao restaurar após validação falha: {}", e))?;
+                    continue;
+                }
+
+                device
+                    .seek(SeekFrom::Start(after_header_pos))
+                    .map_err(|e| format!("Erro ao restaurar antes da reconstrução: {}", e))?;
+
+                file_id += 1;
+
+                let (size, status) = reconstruct_file(&mut device, sig);
+
+                let recovered = RecoveredFile {
+                    id: file_id,
+                    file_type: sig.file_type.to_string(),
+                    size,
+                    status,
+                };
+
+                let _ = app_handle.emit("file_found", recovered);
+
+                device
+                    .seek(SeekFrom::Start(resume_pos))
+                    .map_err(|e| format!("Erro ao restaurar posição final: {}", e))?;
             }
         }
 
-        // mantém apenas o final do buffer para a próxima iteração
         overlap = scan_buf
             .iter()
             .rev()
@@ -136,6 +183,34 @@ fn start_scan(app_handle: tauri::AppHandle, device_path: String) -> Result<(), S
     });
 
     Ok(())
+}
+
+fn validate_candidate(device: &mut std::fs::File, sig: &Signature) -> bool {
+    let mut probe = [0u8; 32];
+
+    if device.read(&mut probe).is_err() {
+        return false;
+    }
+
+    match sig.file_type {
+        "jpg" => validate_jpg(&probe),
+        "png" => validate_png(&probe),
+        _ => true,
+    }
+}
+
+fn validate_jpg(buf: &[u8]) -> bool {
+    if buf.len() < 4 {
+        return false;
+    }
+    buf[0] == 0xFF && buf[1] == 0xD8 && buf[2] == 0xFF && (buf[3] == 0xE0 || buf[3] == 0xE1)
+}
+
+fn validate_png(buf: &[u8]) -> bool {
+    if buf.len() < 16 {
+        return false;
+    }
+    &buf[12..16] == b"IHDR"
 }
 
 fn main() {
